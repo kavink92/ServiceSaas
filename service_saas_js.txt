@@ -1,0 +1,300 @@
+  var staff_list = ['staff_101', 'staff_102'];
+  var working_hours = [9,10,11,12,13,14,15,16,17,18];
+  var allowed_duration_mins = [15,30,45,60,90,120,150,180,210,240,270,300];
+  var service_list = ['service_101', 'service_102', 'service_103'];
+  
+	modify_modal_disaplay(false);
+  handle_modal_interaction();
+  populate_calendar_canvas();
+	populate_calendar_content();
+  populate_modal_content();
+  handle_calendar_slot_interaction();
+
+  function modify_modal_disaplay(show) {
+  	if (show) {
+    	document.querySelector('#appointment-modal-container').
+      	style.visibility = "visible";
+    } else {
+      document.querySelector('#appointment-modal-container').
+      	style.visibility = "hidden";
+    }
+  }
+
+  function add_event_handler_for_modal_save() {
+  	var modal = document.querySelector('#appointment-modal-container');
+    var button = modal.querySelector('#modal-save-button');
+    button.onclick = function() {
+    	var customer_name = modal.querySelector('#modal-customer-name').value;
+      if (customer_name == "") {
+      	alert("Customer name should not be empty");
+      }
+      var phone_number = modal.querySelector('#modal-customer-phone').value;
+      if (phone_number == "") {
+      	alert("Customer phone number should not be empty");
+      }
+      var email = modal.querySelector('#modal-customer-email').value;
+      var service = modal.querySelector('#modal-service').value;
+      if (service == "") {
+      	alert("Set a service");
+      }
+      var staff = modal.querySelector('#modal-staff').value;
+      if (staff == "") {
+      	alert("Set staff");
+      }
+      var notes = modal.querySelector('#modal-notes').value;
+      var start_time = modal.querySelector('#modal-start-time').value;
+      if (start_time == "") {
+      	alert("Set start time");
+      }
+      var start_time_hour = parseInt(start_time.split(":")[0]);
+      var start_time_minute = parseInt(start_time.split(":")[1]);
+      var start_time_duration = modal.querySelector('#modal-duration').value;
+      var post_request = {
+  			"business_id": "business_101",
+        "service_id": service,
+        "staff_id": staff,
+        "customer_name": customer_name,
+        "customer_phone": phone_number,
+        "customer_email": email,
+        "notes": notes,
+        "start_time_year": 2022,
+        "start_time_month": 12,
+        "start_time_day": 25,
+      
+      };
+    } 
+  }
+  
+	function populate_modal_content() {
+  	var modal = document.querySelector('#appointment-modal-container');
+
+    // Populating service.
+    var select = modal.querySelector('#modal-service');
+    for (const service of service_list) {
+    	var option = document.createElement("option");
+      option.value = service;
+      option.text = service;
+      select.appendChild(option);
+    }
+    
+    // Populating staff.
+    select = modal.querySelector('#modal-staff');
+    for (const s of staff_list) {
+    	var option = document.createElement("option");
+      option.value = s;
+      option.text = s;
+      select.appendChild(option);
+    }
+    
+    // Set start time
+    select = modal.querySelector('#modal-start-time');
+    for (const wtime of working_hours) {
+    	for (var p = 0; p < 4; p++) {
+    		var option = document.createElement("option");
+      	option.value = "" + wtime + ":" + p*15;
+      	option.text = display_time(wtime, p*15);
+      	select.appendChild(option);  
+      }
+    }
+    
+    // set allowed duration
+    select = modal.querySelector('#modal-duration')
+    for (const d of allowed_duration_mins) {
+    	var option = document.createElement("option");
+      option.value = d;
+      option.text = d + " mins";
+      select.appendChild(option);
+    }
+    
+    // Add on click handler for save button
+    add_event_handler_for_modal_save();
+  }
+  
+  function update_modal_content(staff, hour, pos) { 
+    var modal = document.querySelector('#appointment-modal-container');
+    // Populating staff.
+    select = modal.querySelector('#modal-staff');
+    for (var i=0; i<select.options.length; i++) {
+    	if (select.options[i].value == staff) {
+      	select.options[i].setAttribute('selected','selected');
+      }
+    }
+    
+    // Set start time
+    select = modal.querySelector('#modal-start-time');
+    for (var i=0; i<select.options.length; i++) {
+    	if (select.options[i].value == display_time(hour, pos*15)) {
+      	select.options[i].setAttribute('selected','selected');
+      }
+    } 	
+  }
+  
+	function all_click_handlers_to_sub_rows(calendar_ui_col) {
+  	var sub_row_pos = [0, 1, 2, 3];
+    for (const pos of sub_row_pos) {
+    	var sub_row = calendar_ui_col.querySelector("#calendar-sub-row-" + pos);
+      sub_row.onclick = function() {
+        var staff = this.parentElement.id.replace('calendar-ui-col-', '');
+       	var hour = this.parentElement.parentElement.parentElement.
+      		id.replace('calendar-ui-row-', '');
+        update_modal_content(staff, parseInt(hour), parseInt(pos));
+        modify_modal_disaplay(true);
+      }
+    }
+  }
+  
+  function all_click_handlers_to_cols(hours_row) {
+    for (const staff of staff_list) {
+			var calendar_ui_col = hours_row.querySelector("#calendar-ui-col-" +
+      	staff);
+      all_click_handlers_to_sub_rows(calendar_ui_col);
+    }
+  }
+  
+  function handle_calendar_slot_interaction() {
+  	for (const working_hour of working_hours){
+    	var hour_row = document.querySelector("#calendar-ui-row-" +
+      	working_hour);
+      all_click_handlers_to_cols(hour_row);
+		} 
+  }
+
+  function handle_modal_interaction() {
+  	// Close button.
+  	document.querySelector('#appointment-modal-close').
+    	onclick = function(){
+    		modify_modal_disaplay(false);
+  		};
+  }
+  
+	function populate_calendar_canvas() {
+    var calendar_ui_content_wrapper =
+  		document.querySelector('#calendar-ui-content-wrapper');
+    
+    // Top row related
+    var calendar_ui_top_row = 
+    	document.querySelector('#calendar-ui-top-row');
+    var calendar_ui_top_row_col_to_replicate = 
+    	calendar_ui_top_row.querySelector('#calendar-ui-top-hero-col');
+      
+    // Main content related
+  	var calendar_ui_row_to_replicate = 
+  		calendar_ui_content_wrapper.querySelector('#calendar-ui-hero-row');
+  	var calendar_ui_col_to_replicate = 
+  		calendar_ui_row_to_replicate.querySelector('#calendar-ui-hero-col');
+     
+    var col_width = 90 / staff_list.length;
+    for (const staff of staff_list) {
+    	// Top row related
+      var top_row_ui_cal_to_add =
+      	calendar_ui_top_row_col_to_replicate.cloneNode(true);
+      top_row_ui_cal_to_add.id = "calendar-ui-top-col-" + staff;
+      top_row_ui_cal_to_add.style.width = col_width.toString() + "%";
+      top_row_ui_cal_to_add.querySelector("#calendar-ui-top-row-text").
+      	innerHTML = staff;
+      calendar_ui_top_row_col_to_replicate.parentElement.
+      	appendChild(top_row_ui_cal_to_add);
+      
+      // Main content related
+    	var calendar_ui_col_to_add =
+      	calendar_ui_col_to_replicate.cloneNode(true);
+      calendar_ui_col_to_add.id = "calendar-ui-col-" + staff;
+  		calendar_ui_col_to_add.style.width = col_width.toString() + "%";
+      calendar_ui_col_to_replicate.
+      	parentElement.appendChild(calendar_ui_col_to_add);
+    }
+    calendar_ui_top_row_col_to_replicate.style.display = "none";
+    calendar_ui_top_row_col_to_replicate.remove();
+    calendar_ui_col_to_replicate.style.display = "none";
+  	calendar_ui_col_to_replicate.remove();
+    
+    for (const working_hour of working_hours){
+    	var calendar_ui_row_to_add =
+      	calendar_ui_row_to_replicate.cloneNode(true);
+       
+      // Set hour to the left panel
+      calendar_ui_row_to_add.querySelector("#time-hour-text").innerHTML =
+      	display_time(working_hour, 0);
+      calendar_ui_row_to_add.id = "calendar-ui-row-" + working_hour;
+      calendar_ui_content_wrapper.appendChild(calendar_ui_row_to_add);
+		} 
+    calendar_ui_row_to_replicate.style.display = "none";
+  	calendar_ui_row_to_replicate.remove();
+  }
+  
+	function populate_calendar_content() {
+  	var business_id = "business_101";
+    var service_id = "service_101";
+    var staff_id = "staff_101";
+ 
+	 	fetch("https://servisaas.uc.r.appspot.com/get-actions-for-day?business_id=business_101&start_time_year=2022&start_time_month=12&start_time_day=25&staff_ids=staff_101")
+  	.then((response) => {
+  		return response.json();
+  	})
+  	.then((data) => {
+    	alert(JSON.stringify(data));
+      populate_slots(data["slots"]);
+    })
+  	.catch(function (error) {
+			// There was an error
+    	alert(error);
+			console.warn(error);
+		});
+	}
+  
+	function populate_slots(slots) {
+    //for (const slot of slots) {
+    	populate_slot(slots[0]);
+    //}
+  }
+  
+  function populate_slot(slot) {
+    var duration_till_now = 0;
+    
+    var current_time = slot["start_time_hour"] +
+    	slot["start_time_minute"] / 60;
+    var text_added = false;
+    while (duration_till_now < slot["duration_minute"]) { 
+    	var hour_floor = Math.floor(current_time);
+      var sub_slot_pos = (current_time - hour_floor) / 0.25;
+      var row_to_update =
+      	document.querySelector('#calendar-ui-row-'+hour_floor);
+      
+      var col_to_update =
+      	row_to_update.querySelector('#calendar-ui-col-' + slot["staff_id"]);
+      var sub_row =
+      	col_to_update.
+      		querySelector('#calendar-sub-row-' + sub_slot_pos);
+     	sub_row.style.backgroundColor = "green";
+      sub_row.style.borderColor = "green";
+      if (!text_added) {
+      	text_added = true;
+        sub_row.querySelector('#sub-row-text-' +
+        	sub_slot_pos).innerHTML = "men hair cut";
+      }
+      
+    	duration_till_now += 15;
+      current_time += 0.25      
+    }
+  }
+
+  function display_time(hour, min) {
+    var result = "";
+    if (hour <= 12) {
+    	result += hour;
+    } else {
+    	result += (hour - 12);
+    }
+    result += ":";
+    if (min < 10) {
+    	result += "0";
+    }
+    result += min;
+    result += " ";
+    if (hour < 12) {
+    	result += "am";
+    } else {
+    	result += "pm";
+    }
+    return result;
+  }
